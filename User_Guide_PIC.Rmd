@@ -1,0 +1,153 @@
+---
+title: "Executing NHANES analysis using the PIC-SURE API"
+author: "Chirag J Patel and Michael T McDuffie"
+date: "May 19, 2016"
+output: html_document
+---
+
+In this guide, we will show how to estiamte the distribution of lead in children using the NHANES data via the PIC-SURE API.
+
+##Required Libraries for communication
+```{r}
+library(httr)
+library(jsonlite)
+library(XML)
+```
+
+##Build Base Query Strings for interacting with IRCT
+
+```{r}
+IRCT_REST_BASE_URL <- "http://bd2k-picsure.hms.harvard.edu/"
+
+#REST URL
+IRCT_CL_SERVICE_URL <- paste(IRCT_REST_BASE_URL,"IRCT-CL/rest/",sep="")
+
+#Service URLS
+IRCT_RESOURCE_BASE_URL <- paste(IRCT_CL_SERVICE_URL,"resourceService/",sep="")
+IRCT_QUERY_BASE_URL <- paste(IRCT_CL_SERVICE_URL,"queryRESTService/",sep="")
+IRCT_RESULTS_BASE_URL <- paste(IRCT_CL_SERVICE_URL,"resultService/",sep="")
+
+#List resources
+IRCT_LIST_RESOURCE_URL <- paste(IRCT_RESOURCE_BASE_URL,"resources",sep="")
+
+#Query
+IRCT_START_QUERY_URL <- paste(IRCT_QUERY_BASE_URL,"startQuery",sep="")
+IRCT_WHERE_QUERY_URL <- paste(IRCT_QUERY_BASE_URL,"whereClause",sep="")
+IRCT_RUN_QUERY_URL <- paste(IRCT_QUERY_BASE_URL,"runQuery",sep="")
+
+#Add Select Clause
+IRCT_SELECT_QUERY_URL <- paste(IRCT_QUERY_BASE_URL,"selectClause",sep="")
+
+#Get Results
+IRCT_GET_JSON_RESULTS_URL <- paste(IRCT_RESULTS_BASE_URL,"download/json",sep="")
+```
+
+##Start a conversation
+```{r}
+response <- GET(IRCT_START_QUERY_URL, verbose())
+conversationId <- content(response)$cid
+```
+
+##Add a where clause to filter patient list
+```{r}
+whereParameterList <- list(type="where", 
+                            field="NHANES Public/Public Studies///NHANES/NHANES/demographics/SEX/", 
+                            logicalOperator="AND",
+                            predicate="CONTAINS",
+                            "data-encounter"="No",
+                            cid=conversationId
+                           )
+response <- GET(IRCT_WHERE_QUERY_URL, query=whereParameterList, verbose())
+content(response)
+```
+
+##Add select clauses
+```{r}
+selectParameterList <- list(type="select", 
+                            field="NHANES Public/Public Studies///NHANES/NHANES/demographics/AGE/",
+                            alias="AGE",
+                            cid=conversationId)
+response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)
+
+selectParameterList <- list(type="select", 
+                            field="NHANES Public/Public Studies///NHANES/NHANES/demographics/RACE/",
+                            alias="Race",
+                            cid=conversationId)
+response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)
+
+selectParameterList <- list(type="select", 
+                            field="NHANES Public/Public Studies///NHANES/NHANES/demographics/SDDSRVYR/", 
+                            alias="Survey Year",
+                            cid=conversationId
+                           )
+response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)
+
+
+selectParameterList <- list(type="select", 
+                            field="NHANES Public/Public Studies///NHANES/NHANES/demographics/SDMVPSU/", 
+                            alias="Survey PSU",
+                            cid=conversationId
+                           )
+response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)
+
+selectParameterList <- list(type="select", 
+                            field="NHANES Public/Public Studies///NHANES/NHANES/demographics/SDMVSTRA/", 
+                            alias="Survey Strata",
+                            cid=conversationId
+                           )
+response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)
+
+selectParameterList <- list(type="select", 
+                            field="NHANES Public/Public Studies///NHANES/NHANES/demographics/WTMEC2YR/", 
+                            alias="Survey Weighting",
+                            cid=conversationId
+                           )
+response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)
+
+
+
+selectParameterList <- list(type="select", 
+                            field="NHANES Public/Public Studies///NHANES/NHANES/laboratory/heavy metals/Lead (ug/dL)", 
+                            alias="Lead",
+                            cid=conversationId
+                           )
+response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)
+
+
+```
+
+##Run the full query and store the result id
+```{r}
+runQueryList <- list(cid=conversationId)
+response <- GET(IRCT_RUN_QUERY_URL, query=runQueryList, verbose())
+resultId <- content(response)$resultId
+content(response)
+```
+
+##Retrieve Results
+```{r}
+response <- GET(paste(IRCT_GET_JSON_RESULTS_URL,'/',resultId,sep=""), verbose())
+results <- content(response)
+results<- data.frame(do.call("rbind", results))
+```
+
+## Compute the quantiles of serum lead distribution of people under the age of 18 by sex in 2005-2006
+```{r}
+library(survey)
+results[, 'X.NHANES.laboratory.heavy.metals.Lead..ug.dL..'] <- as.numeric(results[, 'X.NHANES.laboratory.heavy.metals.Lead..ug.dL..'])
+results[, 'X.NHANES.demographics.AGE.'] <- as.numeric(results[, 'X.NHANES.demographics.AGE.'])
+results[, 'X.NHANES.demographics.SDMVSTRA.'] <- as.numeric(results[, 'X.NHANES.demographics.SDMVSTRA.'])
+results[, 'X.NHANES.demographics.SDDSRVYR.'] <- as.numeric(results[, 'X.NHANES.demographics.SDDSRVYR.'])
+results[, 'X.NHANES.demographics.WTMEC2YR.'] <- as.numeric(results[, 'X.NHANES.demographics.WTMEC2YR.'])
+results[, 'X.NHANES.demographics.SDMVPSU'] <- as.numeric(results[, 'X.NHANES.demographics.SDMVPSU'])
+dsn <- svydesign(id=~X.NHANES.demographics.SDMVPSU, strata=~X.NHANES.demographics.SDMVSTRA., probs=~X.NHANES.demographics.WTMEC2YR., nest=T,data=subset(dat, X.NHANES.demographics.WTMEC2YR. > 0)) # first cret a survey design object, speciifying the sampling units (SDMVPSU), the strata (SDMVSTRA), and probability weight of being selected WTMEC2YR
+dsn.2005 <- subset(dsn, X.NHANES.demographics.SDDSRVYR. == 4)
+svyquantile(~X.NHANES.laboratory.heavy.metals.Lead..ug.dL.., quantiles= c(0, .25,.5,.75, 1), dsn.2005, na.rm=T)
+```
