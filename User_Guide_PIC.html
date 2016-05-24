@@ -101,14 +101,11 @@ IRCT_SELECT_QUERY_URL &lt;- paste(IRCT_QUERY_BASE_URL,&quot;selectClause&quot;,s
 #Get Results
 IRCT_GET_JSON_RESULTS_URL &lt;- paste(IRCT_RESULTS_BASE_URL,&quot;download/json&quot;,sep=&quot;&quot;)</code></pre>
 </div>
-<div id="start-a-conversation" class="section level2">
-<h2>Start a conversation</h2>
+<div id="first-get-the-lead-data" class="section level2">
+<h2>First, get the Lead data</h2>
 <pre class="r"><code>response &lt;- GET(IRCT_START_QUERY_URL, verbose())
-conversationId &lt;- content(response)$cid</code></pre>
-</div>
-<div id="add-a-where-clause-to-filter-patient-list" class="section level2">
-<h2>Add a where clause to filter patient list</h2>
-<pre class="r"><code>whereParameterList &lt;- list(type=&quot;where&quot;, 
+conversationId &lt;- content(response)$cid
+whereParameterList &lt;- list(type=&quot;where&quot;, 
                             field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/SEX/&quot;, 
                             logicalOperator=&quot;AND&quot;,
                             predicate=&quot;CONTAINS&quot;,
@@ -122,9 +119,19 @@ content(response)</code></pre>
 ## 
 ## $clauseId
 ## [1] 0</code></pre>
-</div>
-<div id="add-select-clauses" class="section level2">
-<h2>Add select clauses</h2>
+<pre class="r"><code>##Add select clauses: get age, race, and Lead biomarker data
+
+selectParameterList &lt;- list(type=&quot;select&quot;, 
+                            field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/SEX/&quot;,
+                            alias=&quot;SEX&quot;,
+                            cid=conversationId)
+response &lt;- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)</code></pre>
+<pre><code>## $status
+## [1] &quot;OK&quot;
+## 
+## $clauseId
+## [1] 1</code></pre>
 <pre class="r"><code>selectParameterList &lt;- list(type=&quot;select&quot;, 
                             field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/AGE/&quot;,
                             alias=&quot;AGE&quot;,
@@ -135,7 +142,7 @@ content(response)</code></pre>
 ## [1] &quot;OK&quot;
 ## 
 ## $clauseId
-## [1] 1</code></pre>
+## [1] 2</code></pre>
 <pre class="r"><code>selectParameterList &lt;- list(type=&quot;select&quot;, 
                             field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/RACE/&quot;,
                             alias=&quot;Race&quot;,
@@ -146,55 +153,7 @@ content(response)</code></pre>
 ## [1] &quot;OK&quot;
 ## 
 ## $clauseId
-## [1] 2</code></pre>
-<pre class="r"><code>selectParameterList &lt;- list(type=&quot;select&quot;, 
-                            field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/SDDSRVYR/&quot;, 
-                            alias=&quot;Survey Year&quot;,
-                            cid=conversationId
-                           )
-response &lt;- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
-content(response)</code></pre>
-<pre><code>## $status
-## [1] &quot;OK&quot;
-## 
-## $clauseId
 ## [1] 3</code></pre>
-<pre class="r"><code>selectParameterList &lt;- list(type=&quot;select&quot;, 
-                            field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/SDMVPSU/&quot;, 
-                            alias=&quot;Survey PSU&quot;,
-                            cid=conversationId
-                           )
-response &lt;- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
-content(response)</code></pre>
-<pre><code>## $status
-## [1] &quot;OK&quot;
-## 
-## $clauseId
-## [1] 4</code></pre>
-<pre class="r"><code>selectParameterList &lt;- list(type=&quot;select&quot;, 
-                            field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/SDMVSTRA/&quot;, 
-                            alias=&quot;Survey Strata&quot;,
-                            cid=conversationId
-                           )
-response &lt;- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
-content(response)</code></pre>
-<pre><code>## $status
-## [1] &quot;OK&quot;
-## 
-## $clauseId
-## [1] 5</code></pre>
-<pre class="r"><code>selectParameterList &lt;- list(type=&quot;select&quot;, 
-                            field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/WTMEC2YR/&quot;, 
-                            alias=&quot;Survey Weighting&quot;,
-                            cid=conversationId
-                           )
-response &lt;- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
-content(response)</code></pre>
-<pre><code>## $status
-## [1] &quot;OK&quot;
-## 
-## $clauseId
-## [1] 6</code></pre>
 <pre class="r"><code>selectParameterList &lt;- list(type=&quot;select&quot;, 
                             field=&quot;NHANES Public/Public Studies///NHANES/NHANES/laboratory/heavy metals/Lead (ug/dL)&quot;, 
                             alias=&quot;Lead&quot;,
@@ -206,38 +165,152 @@ content(response)</code></pre>
 ## [1] &quot;OK&quot;
 ## 
 ## $clauseId
-## [1] 7</code></pre>
-</div>
-<div id="run-the-full-query-and-store-the-result-id" class="section level2">
-<h2>Run the full query and store the result id</h2>
-<pre class="r"><code>runQueryList &lt;- list(cid=conversationId)
+## [1] 4</code></pre>
+<pre class="r"><code>##Run the full query and store the result id
+
+runQueryList &lt;- list(cid=conversationId)
 response &lt;- GET(IRCT_RUN_QUERY_URL, query=runQueryList, verbose())
 resultId &lt;- content(response)$resultId
 content(response)</code></pre>
 <pre><code>## $resultId
-## [1] 944</code></pre>
+## [1] 974</code></pre>
 </div>
 <div id="retrieve-results" class="section level2">
 <h2>Retrieve Results</h2>
 <pre class="r"><code>response &lt;- GET(paste(IRCT_GET_JSON_RESULTS_URL,'/',resultId,sep=&quot;&quot;), verbose())
 results &lt;- content(response)
-results&lt;- data.frame(do.call(&quot;rbind&quot;, results))
-colnames(results)</code></pre>
-<pre><code>##  [1] &quot;X.NHANES.laboratory.heavy.metals.Lead..ug.dL..&quot;
-##  [2] &quot;X.NHANES.demographics.RACE.white.&quot;             
-##  [3] &quot;X.NHANES.demographics.SDMVSTRA.&quot;               
-##  [4] &quot;X.NHANES.demographics.SDDSRVYR.&quot;               
-##  [5] &quot;X.NHANES.demographics.AGE.&quot;                    
-##  [6] &quot;X.NHANES.demographics.RACE.black.&quot;             
-##  [7] &quot;PATIENT_NUM&quot;                                   
-##  [8] &quot;X.NHANES.demographics.RACE.mexican.&quot;           
-##  [9] &quot;X.NHANES.demographics.RACE.other.&quot;             
-## [10] &quot;X.NHANES.demographics.RACE.other_hispanic.&quot;    
-## [11] &quot;X.NHANES.demographics.WTMEC2YR.&quot;               
-## [12] &quot;X.NHANES.demographics.SDMVPSU.&quot;</code></pre>
-<pre class="r"><code>#colnames(results) &lt;- c('Lead_ug_dL', 'race_white', 'age', 'race_black', 'participant_id', 'race_mexican', 'race_other', 'race_other_hispanic')
-#results$Lead_ug_dL &lt;- as.numeric(results$Lead_ug_dL)
-#results$age &lt;- as.numeric(results$age)</code></pre>
+leadData &lt;- data.frame(do.call(&quot;rbind&quot;, results))</code></pre>
+</div>
+<div id="now-get-the-nhanes-survey-related-information-e.g.-survey-year-psu-strata" class="section level2">
+<h2>Now, get the NHANES survey-related information (e.g., Survey Year, PSU, strata)</h2>
+<pre class="r"><code>response &lt;- GET(IRCT_START_QUERY_URL, verbose())
+conversationId &lt;- content(response)$cid
+
+whereParameterList &lt;- list(type=&quot;where&quot;, 
+                            field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/SEX/&quot;, 
+                            logicalOperator=&quot;AND&quot;,
+                            predicate=&quot;CONTAINS&quot;,
+                            &quot;data-encounter&quot;=&quot;No&quot;,
+                            cid=conversationId
+                           )
+response &lt;- GET(IRCT_WHERE_QUERY_URL, query=whereParameterList, verbose())
+content(response)</code></pre>
+<pre><code>## $status
+## [1] &quot;OK&quot;
+## 
+## $clauseId
+## [1] 0</code></pre>
+<pre class="r"><code>selectParameterList &lt;- list(type=&quot;select&quot;, 
+                            field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/SDDSRVYR/&quot;, 
+                            alias=&quot;Survey Year&quot;,
+                            cid=conversationId
+                           )
+response &lt;- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)</code></pre>
+<pre><code>## $status
+## [1] &quot;OK&quot;
+## 
+## $clauseId
+## [1] 1</code></pre>
+<pre class="r"><code>selectParameterList &lt;- list(type=&quot;select&quot;, 
+                            field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/SDMVPSU/&quot;, 
+                            alias=&quot;Survey PSU&quot;,
+                            cid=conversationId
+                           )
+response &lt;- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)</code></pre>
+<pre><code>## $status
+## [1] &quot;OK&quot;
+## 
+## $clauseId
+## [1] 2</code></pre>
+<pre class="r"><code>selectParameterList &lt;- list(type=&quot;select&quot;, 
+                            field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/SDMVSTRA/&quot;, 
+                            alias=&quot;Survey Strata&quot;,
+                            cid=conversationId
+                           )
+response &lt;- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)</code></pre>
+<pre><code>## $status
+## [1] &quot;OK&quot;
+## 
+## $clauseId
+## [1] 3</code></pre>
+<pre class="r"><code>selectParameterList &lt;- list(type=&quot;select&quot;, 
+                            field=&quot;NHANES Public/Public Studies///NHANES/NHANES/demographics/WTMEC2YR/&quot;, 
+                            alias=&quot;Survey Weighting&quot;,
+                            cid=conversationId
+                           )
+response &lt;- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)</code></pre>
+<pre><code>## $status
+## [1] &quot;OK&quot;
+## 
+## $clauseId
+## [1] 4</code></pre>
+<pre class="r"><code>runQueryList &lt;- list(cid=conversationId)
+response &lt;- GET(IRCT_RUN_QUERY_URL, query=runQueryList, verbose())
+resultId &lt;- content(response)$resultId
+content(response)</code></pre>
+<pre><code>## $resultId
+## [1] 975</code></pre>
+</div>
+<div id="retrieve-survey-related-information" class="section level2">
+<h2>Retrieve Survey Related Information</h2>
+<pre class="r"><code>response &lt;- GET(paste(IRCT_GET_JSON_RESULTS_URL,'/',resultId,sep=&quot;&quot;), verbose())
+results &lt;- content(response)
+surveyData &lt;- data.frame(do.call(&quot;rbind&quot;, results))</code></pre>
+</div>
+<div id="get-survey-data-frame-ready-for-computation" class="section level2">
+<h2>Get survey data frame ready for computation</h2>
+<pre class="r"><code>library(survey)</code></pre>
+<pre><code>## Loading required package: grid
+## 
+## Attaching package: 'survey'
+## 
+## The following object is masked from 'package:graphics':
+## 
+##     dotchart</code></pre>
+<pre class="r"><code>dim(surveyData)</code></pre>
+<pre><code>## [1] 41474     5</code></pre>
+<pre class="r"><code>dim(leadData)</code></pre>
+<pre><code>## [1] 41474    10</code></pre>
+<pre class="r"><code>bothData &lt;- cbind(surveyData, leadData)
+colnames(bothData) &lt;- c('SDMVSTRA', 'SDDSRVYR', 'PATIENT_NUM', 'WTMEC2YR', 'SDMVPSU', 'LEAD', 'race_white', 'sex_male', 'sex_female', 'age', 'race_black', 'PATIENT_NUM2', 'race_mexican', 'race_other', 'race_other_hispanic') # rename column names for usability
+
+bothData$SDMVSTRA &lt;- as.numeric(bothData$SDMVSTRA)
+bothData$WTMEC2YR &lt;- as.numeric(bothData$WTMEC2YR)
+bothData$SDMVPSU &lt;- as.numeric(bothData$SDMVPSU)
+bothData$SDDSRVYR &lt;- as.numeric(bothData$SDDSRVYR)
+bothData$age &lt;- as.numeric(bothData$age)
+bothData$LEAD &lt;- as.numeric(bothData$LEAD)
+
+dsn &lt;- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, probs=~WTMEC2YR, nest=T,data=subset(bothData, WTMEC2YR &gt; 0)) ## create survey design object that accomodates NHANES data structure</code></pre>
+</div>
+<div id="estimate-of-quartiles-of-lead-in-the-overall-population-females-males" class="section level2">
+<h2>Estimate of quartiles of lead in the overall population, females, males</h2>
+<pre class="r"><code>svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), dsn, na.rm=T) #overall</code></pre>
+<pre><code>##         0 0.25 0.5 0.75    1
+## LEAD 0.18  0.9 1.4  2.3 68.9</code></pre>
+<pre class="r"><code>svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(dsn, sex_female == 'female') , na.rm=T) #females</code></pre>
+<pre><code>##         0 0.25  0.5 0.75    1
+## LEAD 0.18 0.75 1.19  1.9 57.1</code></pre>
+<pre class="r"><code>svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(dsn, sex_male == 'male') , na.rm=T) #males</code></pre>
+<pre><code>##         0 0.25 0.5 0.75    1
+## LEAD 0.18  1.1 1.7  2.8 68.9</code></pre>
+</div>
+<div id="estimates-of-quartiles-of-lead-in-participants-18-years-of-age" class="section level2">
+<h2>Estimates of quartiles of lead in participants &lt; 18 years of age</h2>
+<pre class="r"><code>age18 &lt;- subset(dsn, age &lt;= 18)
+svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), age18, na.rm=T) #overall</code></pre>
+<pre><code>##         0 0.25 0.5 0.75    1
+## LEAD 0.18  0.8 1.3  2.1 68.9</code></pre>
+<pre class="r"><code>svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(age18, sex_female == 'female') , na.rm=T) #females</code></pre>
+<pre><code>##         0 0.25 0.5 0.75    1
+## LEAD 0.18  0.7 1.1  1.8 57.1</code></pre>
+<pre class="r"><code>svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(age18, sex_male == 'male') , na.rm=T) #males</code></pre>
+<pre><code>##         0 0.25 0.5 0.75    1
+## LEAD 0.18    1 1.5  2.3 68.9</code></pre>
 </div>
 
 

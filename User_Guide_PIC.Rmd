@@ -42,14 +42,11 @@ IRCT_SELECT_QUERY_URL <- paste(IRCT_QUERY_BASE_URL,"selectClause",sep="")
 IRCT_GET_JSON_RESULTS_URL <- paste(IRCT_RESULTS_BASE_URL,"download/json",sep="")
 ```
 
-##Start a conversation
+
+## First, get the Lead data
 ```{r}
 response <- GET(IRCT_START_QUERY_URL, verbose())
 conversationId <- content(response)$cid
-```
-
-##Add a where clause to filter patient list
-```{r}
 whereParameterList <- list(type="where", 
                             field="NHANES Public/Public Studies///NHANES/NHANES/demographics/SEX/", 
                             logicalOperator="AND",
@@ -59,10 +56,17 @@ whereParameterList <- list(type="where",
                            )
 response <- GET(IRCT_WHERE_QUERY_URL, query=whereParameterList, verbose())
 content(response)
-```
 
-##Add select clauses
-```{r}
+
+##Add select clauses: get age, race, and Lead biomarker data
+
+selectParameterList <- list(type="select", 
+                            field="NHANES Public/Public Studies///NHANES/NHANES/demographics/SEX/",
+                            alias="SEX",
+                            cid=conversationId)
+response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)
+
 selectParameterList <- list(type="select", 
                             field="NHANES Public/Public Studies///NHANES/NHANES/demographics/AGE/",
                             alias="AGE",
@@ -77,6 +81,47 @@ selectParameterList <- list(type="select",
 response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
 content(response)
 
+
+selectParameterList <- list(type="select", 
+                            field="NHANES Public/Public Studies///NHANES/NHANES/laboratory/heavy metals/Lead (ug/dL)", 
+                            alias="Lead",
+                            cid=conversationId
+                           )
+response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
+content(response)
+
+##Run the full query and store the result id
+
+runQueryList <- list(cid=conversationId)
+response <- GET(IRCT_RUN_QUERY_URL, query=runQueryList, verbose())
+resultId <- content(response)$resultId
+content(response)
+```
+
+##Retrieve Results 
+```{r}
+response <- GET(paste(IRCT_GET_JSON_RESULTS_URL,'/',resultId,sep=""), verbose())
+results <- content(response)
+leadData <- data.frame(do.call("rbind", results))
+
+```
+
+## Now, get the NHANES survey-related information (e.g., Survey Year, PSU, strata)
+```{r}
+
+response <- GET(IRCT_START_QUERY_URL, verbose())
+conversationId <- content(response)$cid
+
+whereParameterList <- list(type="where", 
+                            field="NHANES Public/Public Studies///NHANES/NHANES/demographics/SEX/", 
+                            logicalOperator="AND",
+                            predicate="CONTAINS",
+                            "data-encounter"="No",
+                            cid=conversationId
+                           )
+response <- GET(IRCT_WHERE_QUERY_URL, query=whereParameterList, verbose())
+content(response)
+
 selectParameterList <- list(type="select", 
                             field="NHANES Public/Public Studies///NHANES/NHANES/demographics/SDDSRVYR/", 
                             alias="Survey Year",
@@ -84,7 +129,6 @@ selectParameterList <- list(type="select",
                            )
 response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
 content(response)
-
 
 selectParameterList <- list(type="select", 
                             field="NHANES Public/Public Studies///NHANES/NHANES/demographics/SDMVPSU/", 
@@ -111,43 +155,48 @@ response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
 content(response)
 
 
-
-selectParameterList <- list(type="select", 
-                            field="NHANES Public/Public Studies///NHANES/NHANES/laboratory/heavy metals/Lead (ug/dL)", 
-                            alias="Lead",
-                            cid=conversationId
-                           )
-response <- GET(IRCT_SELECT_QUERY_URL, query=selectParameterList, verbose())
-content(response)
-
-
-```
-
-##Run the full query and store the result id
-```{r}
 runQueryList <- list(cid=conversationId)
 response <- GET(IRCT_RUN_QUERY_URL, query=runQueryList, verbose())
 resultId <- content(response)$resultId
 content(response)
 ```
 
-##Retrieve Results
+##Retrieve Survey Related Information
 ```{r}
 response <- GET(paste(IRCT_GET_JSON_RESULTS_URL,'/',resultId,sep=""), verbose())
 results <- content(response)
-results<- data.frame(do.call("rbind", results))
+surveyData <- data.frame(do.call("rbind", results))
 ```
 
-## Compute the quantiles of serum lead distribution of people under the age of 18 by sex in 2005-2006
+## Get survey data frame ready for computation
 ```{r}
 library(survey)
-results[, 'X.NHANES.laboratory.heavy.metals.Lead..ug.dL..'] <- as.numeric(results[, 'X.NHANES.laboratory.heavy.metals.Lead..ug.dL..'])
-results[, 'X.NHANES.demographics.AGE.'] <- as.numeric(results[, 'X.NHANES.demographics.AGE.'])
-results[, 'X.NHANES.demographics.SDMVSTRA.'] <- as.numeric(results[, 'X.NHANES.demographics.SDMVSTRA.'])
-results[, 'X.NHANES.demographics.SDDSRVYR.'] <- as.numeric(results[, 'X.NHANES.demographics.SDDSRVYR.'])
-results[, 'X.NHANES.demographics.WTMEC2YR.'] <- as.numeric(results[, 'X.NHANES.demographics.WTMEC2YR.'])
-results[, 'X.NHANES.demographics.SDMVPSU'] <- as.numeric(results[, 'X.NHANES.demographics.SDMVPSU'])
-dsn <- svydesign(id=~X.NHANES.demographics.SDMVPSU, strata=~X.NHANES.demographics.SDMVSTRA., probs=~X.NHANES.demographics.WTMEC2YR., nest=T,data=subset(dat, X.NHANES.demographics.WTMEC2YR. > 0)) # first cret a survey design object, speciifying the sampling units (SDMVPSU), the strata (SDMVSTRA), and probability weight of being selected WTMEC2YR
-dsn.2005 <- subset(dsn, X.NHANES.demographics.SDDSRVYR. == 4)
-svyquantile(~X.NHANES.laboratory.heavy.metals.Lead..ug.dL.., quantiles= c(0, .25,.5,.75, 1), dsn.2005, na.rm=T)
+dim(surveyData)
+dim(leadData)
+bothData <- cbind(surveyData, leadData)
+colnames(bothData) <- c('SDMVSTRA', 'SDDSRVYR', 'PATIENT_NUM', 'WTMEC2YR', 'SDMVPSU', 'LEAD', 'race_white', 'sex_male', 'sex_female', 'age', 'race_black', 'PATIENT_NUM2', 'race_mexican', 'race_other', 'race_other_hispanic') # rename column names for usability
+
+bothData$SDMVSTRA <- as.numeric(bothData$SDMVSTRA)
+bothData$WTMEC2YR <- as.numeric(bothData$WTMEC2YR)
+bothData$SDMVPSU <- as.numeric(bothData$SDMVPSU)
+bothData$SDDSRVYR <- as.numeric(bothData$SDDSRVYR)
+bothData$age <- as.numeric(bothData$age)
+bothData$LEAD <- as.numeric(bothData$LEAD)
+
+dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, probs=~WTMEC2YR, nest=T,data=subset(bothData, WTMEC2YR > 0)) ## create survey design object that accomodates NHANES data structure
+```
+
+## Estimate of quartiles of lead in the overall population, females, males
+```{r}
+svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), dsn, na.rm=T) #overall
+svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(dsn, sex_female == 'female') , na.rm=T) #females
+svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(dsn, sex_male == 'male') , na.rm=T) #males
+```
+## Estimates of quartiles of lead in participants < 18 years of age
+```{r}
+age18 <- subset(dsn, age <= 18)
+svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), age18, na.rm=T) #overall
+svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(age18, sex_female == 'female') , na.rm=T) #females
+svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(age18, sex_male == 'male') , na.rm=T) #males
+
 ```
