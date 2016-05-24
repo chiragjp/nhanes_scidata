@@ -8,9 +8,8 @@ MAINTAINER "Nam Pho" nam_pho@hms.harvard.edu
 
 USER rstudio
 
-RUN mkdir /home/rstudio/nhanes_scidata/
-COPY User* /home/rstudio/nhanes_scidata/
-COPY nh* /home/rstudio/nhanes_scidata/
+COPY User* /home/rstudio/
+COPY nh* /home/rstudio/
 
 USER root
 
