@@ -1,4 +1,4 @@
-## dbmi/nhanes_scidata
+## chiragjp/nhanes_scidata
 
 FROM dbmi/exposome-xwas:latest
 
