@@ -12,3 +12,6 @@ To deploy the corresponding `dbmi/nhanes_scidata` Docker container, run:
 ```
 docker run -d -p 80:8787 dbmi/nhanes_scidata
 ```
+Navigate to `127.0.0.1` with the login and password of `rstudio` and all the datasets and accompanying files will be present in the current working directory,
+
+![Rstudio screenshot](https://raw.githubusercontent.com/chiragjp/nhanes_scidata/master/img/Rstudio.png "Rstudio screenshot")
