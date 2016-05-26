@@ -1,6 +1,6 @@
 ## chiragjp/nhanes_scidata
 
-FROM dbmi/exposome-xwas:latest
+FROM dbmi/exposome-xwas:latest # will need to re-link to chiragjp/exposome-xwas in the future
 
 MAINTAINER "Nam Pho" nam_pho@hms.harvard.edu
 
