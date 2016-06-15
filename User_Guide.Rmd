@@ -5,31 +5,26 @@ date: "May 19, 2016"
 output: html_document
 ---
 
-
 This presents how to use to how to use the NHANES datasets and to make inferences that account for the non-random and stratified nature of the survey.
-Comments to:
-Chirag Patel (chirag@hms.harvard.edu)
-5/19/2016
 
+Comments to: Chirag Patel (chirag@hms.harvard.edu)
 
-Load the .Rdata object
+Load the `.Rdata` object:
 ```{r}
-load('./nh_99-06.Rdata')
+load('nh_99-06.Rdata')
 ```
 
-How do we figure out what is a exposure and what is a phenotype in NHANES?
-Hint: Use the 'VarDescription' data.frame:
+How do we figure out what is a exposure and what is a phenotype in NHANES? Hint: Use the `VarDescription` `data.frame`:
 ```{r}
 head(VarDescription) ## this gives the variable name and description and broad category for each variable (called 'var_desc_ewas')
 
 as.data.frame(table(VarDescription$category)) ##  the types of variables
-
 ```
 
 Next, how does survey-weighted regression work?
 Suppose we want to look at the association between fasting glucose and BMI (adjusted by age and sex) in the 2003-2004 survey.
 
-Under a normal study sample, we would simply use lm:
+Under a normal study sample, we would simply use `lm`:
 ```{r}
 dat <- subset(MainTable, SDDSRVYR == 3) # subset for 2003-2004
 mod <- lm(LBXGLU ~ BMXBMI + RIDAGEYR + female, dat)
@@ -44,14 +39,13 @@ mod.svy <- svyglm(LBXGLU  ~ BMXBMI + RIDAGEYR + female, design=dsn) ## now use S
 summary(mod.svy)  #slightly different estimates
 ```
 
-Lets try logistic regression, looking at the clinical diagnosis of diabetes (LBXGLU >= 126) using logistic regression:
+Let's try logistic regression, looking at the clinical diagnosis of diabetes (`LBXGLU >= 126`) using logistic regression:
 ```{r}
 mod.svy.t2d <- svyglm(I(LBXGLU >=125)  ~ BMXBMI + RIDAGEYR + female, design=dsn, family=quasibinomial()) #depending on the family= parameter, you can use this for logistic regression, as well.
 summary(mod.svy.t2d) #t2d increases by 10% per 1 unit increase in BMI.
 ```
 
-What about survival analysis? Different beast! In survival analyses, we require whther the person died at the time of querying survival (0 or 1), and time to querying (e.g., 1 month, 5 months, etc)
-These are coded as MORTSTAT and PERMTH_EXM (time to death from the the examination survey) in the MainTable respectively.
+What about survival analysis? Different beast! In survival analyses, we require whether the person died at the time of querying survival (0 or 1) and time to querying (e.g., 1 month, 5 months). These are coded as `MORTSTAT` and `PERMTH_EXM` (time to death from the the examination survey) in the `MainTable`, respectively.
 For a 1 unit glucose increase, what is the hazard of death adjusting for age and sex for participants surveyed in 1999-2000?
 ```{r}
 suvdat <- subset(MainTable, !is.na(MORTSTAT) & !is.na(PERMTH_EXM) & SDDSRVYR == 1) ## get all data from 1999-2000
@@ -62,14 +56,12 @@ summary(mod.cox.svy)
 
 With those basics in hand, now we can tackle executing exposome-like associations in NHANES.
 
-For example, we recently found an association between serum cadmium and mortality (see: Patel CJ et al, Int. J. of Epidem., 2013). Serum cadmium was found to be signficantly associated with all-cause mortality.
+For example, we recently found an association between serum cadmium and mortality ([Patel CJ, *et al.* 2013](https://www.ncbi.nlm.nih.gov/pubmed/24345851)). Serum cadmium was found to be signficantly associated with all-cause mortality.
 
-What is the variable name for "cadmium?"
+What is the variable name for "cadmium"?
 ```{r}
 VarDescription[grep('cadmium', VarDescription$var_desc, ignore.case = T), ] # looks like it is LBXBCD
-```
 
-```{r}
 suvdat <- subset(MainTable, !is.na(MORTSTAT) & !is.na(PERMTH_EXM) & SDDSRVYR == 1) ## get all data from 1999-2000
 dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=suvdat)
 mod.cox.cadmium.1 <- svycoxph(Surv(PERMTH_EXM, MORTSTAT) ~ RIDAGEYR + female + LBXBCD, dsn)
@@ -83,4 +75,3 @@ dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=s
 mod.cox.cadmium.2 <- svycoxph(Surv(PERMTH_EXM, MORTSTAT) ~ RIDAGEYR + female + LBXBCD, dsn) # yes, strong association in 2001-2002 as well
 summary(mod.cox.cadmium.2)
 ```
-
