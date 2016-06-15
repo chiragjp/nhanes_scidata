@@ -173,7 +173,7 @@ response &lt;- GET(IRCT_RUN_QUERY_URL, query=runQueryList, verbose())
 resultId &lt;- content(response)$resultId
 content(response)</code></pre>
 <pre><code>## $resultId
-## [1] 974</code></pre>
+## [1] 1004</code></pre>
 </div>
 <div id="retrieve-results" class="section level2">
 <h2>Retrieve Results</h2>
@@ -253,7 +253,7 @@ response &lt;- GET(IRCT_RUN_QUERY_URL, query=runQueryList, verbose())
 resultId &lt;- content(response)$resultId
 content(response)</code></pre>
 <pre><code>## $resultId
-## [1] 975</code></pre>
+## [1] 1005</code></pre>
 </div>
 <div id="retrieve-survey-related-information" class="section level2">
 <h2>Retrieve Survey Related Information</h2>
@@ -285,32 +285,32 @@ bothData$SDDSRVYR &lt;- as.numeric(bothData$SDDSRVYR)
 bothData$age &lt;- as.numeric(bothData$age)
 bothData$LEAD &lt;- as.numeric(bothData$LEAD)
 
-dsn &lt;- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, probs=~WTMEC2YR, nest=T,data=subset(bothData, WTMEC2YR &gt; 0)) ## create survey design object that accomodates NHANES data structure</code></pre>
+dsn &lt;- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=subset(bothData, WTMEC2YR &gt; 0)) ## create survey design object that accomodates NHANES data structure</code></pre>
 </div>
 <div id="estimate-of-quartiles-of-lead-in-the-overall-population-females-males" class="section level2">
 <h2>Estimate of quartiles of lead in the overall population, females, males</h2>
 <pre class="r"><code>svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), dsn, na.rm=T) #overall</code></pre>
 <pre><code>##         0 0.25 0.5 0.75    1
-## LEAD 0.18  0.9 1.4  2.3 68.9</code></pre>
+## LEAD 0.18  0.9 1.4  2.2 68.9</code></pre>
 <pre class="r"><code>svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(dsn, sex_female == 'female') , na.rm=T) #females</code></pre>
-<pre><code>##         0 0.25  0.5 0.75    1
-## LEAD 0.18 0.75 1.19  1.9 57.1</code></pre>
+<pre><code>##         0 0.25 0.5 0.75    1
+## LEAD 0.18  0.8 1.2 1.82 57.1</code></pre>
 <pre class="r"><code>svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(dsn, sex_male == 'male') , na.rm=T) #males</code></pre>
 <pre><code>##         0 0.25 0.5 0.75    1
-## LEAD 0.18  1.1 1.7  2.8 68.9</code></pre>
+## LEAD 0.18  1.1 1.7  2.6 68.9</code></pre>
 </div>
 <div id="estimates-of-quartiles-of-lead-in-participants-18-years-of-age" class="section level2">
 <h2>Estimates of quartiles of lead in participants &lt; 18 years of age</h2>
 <pre class="r"><code>age18 &lt;- subset(dsn, age &lt;= 18)
 svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), age18, na.rm=T) #overall</code></pre>
 <pre><code>##         0 0.25 0.5 0.75    1
-## LEAD 0.18  0.8 1.3  2.1 68.9</code></pre>
+## LEAD 0.18  0.8 1.1  1.8 68.9</code></pre>
 <pre class="r"><code>svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(age18, sex_female == 'female') , na.rm=T) #females</code></pre>
 <pre><code>##         0 0.25 0.5 0.75    1
-## LEAD 0.18  0.7 1.1  1.8 57.1</code></pre>
+## LEAD 0.18  0.7   1  1.6 57.1</code></pre>
 <pre class="r"><code>svyquantile(~LEAD, quantiles= c(0, .25,.5,.75, 1), subset(age18, sex_male == 'male') , na.rm=T) #males</code></pre>
-<pre><code>##         0 0.25 0.5 0.75    1
-## LEAD 0.18    1 1.5  2.3 68.9</code></pre>
+<pre><code>##         0 0.25  0.5 0.75    1
+## LEAD 0.18 0.87 1.29  1.9 68.9</code></pre>
 </div>
 
 

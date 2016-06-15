@@ -183,7 +183,7 @@ bothData$SDDSRVYR <- as.numeric(bothData$SDDSRVYR)
 bothData$age <- as.numeric(bothData$age)
 bothData$LEAD <- as.numeric(bothData$LEAD)
 
-dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, probs=~WTMEC2YR, nest=T,data=subset(bothData, WTMEC2YR > 0)) ## create survey design object that accomodates NHANES data structure
+dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=subset(bothData, WTMEC2YR > 0)) ## create survey design object that accomodates NHANES data structure
 ```
 
 ## Estimate of quartiles of lead in the overall population, females, males

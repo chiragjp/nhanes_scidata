@@ -39,7 +39,7 @@ summary(mod)
 But with NHANES, this is technically not correct. We need to use survey-weighting to accomodate the survey sampling of the data:
 ```{r}
 library(survey)
-dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, probs=~WTMEC2YR, nest=T,data=subset(dat, WTMEC2YR > 0)) # first cret a survey design object, specififying the sampling units (SDMVPSU), the strata (SDMVSTRA), and probability weight of being selected WTMEC2YR
+dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=subset(dat, WTMEC2YR > 0)) # first cret a survey design object, specififying the sampling units (SDMVPSU), the strata (SDMVSTRA), and probability weight of being selected WTMEC2YR
 mod.svy <- svyglm(LBXGLU  ~ BMXBMI + RIDAGEYR + female, design=dsn) ## now use SVYGLM; 
 summary(mod.svy)  #slightly different estimates
 ```
@@ -71,7 +71,7 @@ VarDescription[grep('cadmium', VarDescription$var_desc, ignore.case = T), ] # lo
 
 ```{r}
 suvdat <- subset(MainTable, !is.na(MORTSTAT) & !is.na(PERMTH_EXM) & SDDSRVYR == 1) ## get all data from 1999-2000
-dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, probs=~WTMEC2YR, nest=T,data=suvdat)
+dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=suvdat)
 mod.cox.cadmium.1 <- svycoxph(Surv(PERMTH_EXM, MORTSTAT) ~ RIDAGEYR + female + LBXBCD, dsn)
 summary(mod.cox.cadmium.1)
 ```
@@ -79,7 +79,7 @@ summary(mod.cox.cadmium.1)
 Does it replicate in the 2001-2002 survey?
 ```{r}
 suvdat <- subset(MainTable, !is.na(MORTSTAT) & !is.na(PERMTH_EXM) & SDDSRVYR == 2) ## 2003-2004 survey
-dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, probs=~WTMEC2YR, nest=T,data=suvdat)
+dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=suvdat)
 mod.cox.cadmium.2 <- svycoxph(Surv(PERMTH_EXM, MORTSTAT) ~ RIDAGEYR + female + LBXBCD, dsn) # yes, strong association in 2001-2002 as well
 summary(mod.cox.cadmium.2)
 ```

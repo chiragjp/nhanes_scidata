@@ -68,7 +68,7 @@ img {
 </div>
 
 
-<p>This presents how to use to how to use the NHANES datasets and to make inferences that account for the non-random and stratified nature of the survey. Comments to: Chirag Patel (<a href="mailto:chirag@hms.harvard.edu">chirag@hms.harvard.edu</a>)</p>
+<p>This presents how to use to how to use the NHANES datasets and to make inferences that account for the non-random and stratified nature of the survey. Comments to: Chirag Patel (<a href="mailto:chirag@hms.harvard.edu">chirag@hms.harvard.edu</a>) 5/19/2016</p>
 <p>Load the .Rdata object</p>
 <pre class="r"><code>load('./nh_99-06.Rdata')</code></pre>
 <p>How do we figure out what is a exposure and what is a phenotype in NHANES? Hint: Use the ‘VarDescription’ data.frame:</p>
@@ -209,7 +209,7 @@ summary(mod)</code></pre>
 ## The following object is masked from 'package:graphics':
 ## 
 ##     dotchart</code></pre>
-<pre class="r"><code>dsn &lt;- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, probs=~WTMEC2YR, nest=T,data=subset(dat, WTMEC2YR &gt; 0)) # first cret a survey design object, specififying the sampling units (SDMVPSU), the strata (SDMVSTRA), and probability weight of being selected WTMEC2YR
+<pre class="r"><code>dsn &lt;- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=subset(dat, WTMEC2YR &gt; 0)) # first cret a survey design object, specififying the sampling units (SDMVPSU), the strata (SDMVSTRA), and probability weight of being selected WTMEC2YR
 mod.svy &lt;- svyglm(LBXGLU  ~ BMXBMI + RIDAGEYR + female, design=dsn) ## now use SVYGLM; 
 summary(mod.svy)  #slightly different estimates</code></pre>
 <pre><code>## 
@@ -217,19 +217,19 @@ summary(mod.svy)  #slightly different estimates</code></pre>
 ## svyglm(formula = LBXGLU ~ BMXBMI + RIDAGEYR + female, design = dsn)
 ## 
 ## Survey design:
-## svydesign(id = ~SDMVPSU, strata = ~SDMVSTRA, probs = ~WTMEC2YR, 
+## svydesign(id = ~SDMVPSU, strata = ~SDMVSTRA, weights = ~WTMEC2YR, 
 ##     nest = T, data = subset(dat, WTMEC2YR &gt; 0))
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept) 70.33567    3.67041  19.163 2.30e-10 ***
-## BMXBMI       0.56338    0.15816   3.562 0.003909 ** 
-## RIDAGEYR     0.54137    0.05652   9.579 5.69e-07 ***
-## female      -7.45641    1.68163  -4.434 0.000815 ***
+## (Intercept) 68.20751    2.62808  25.953 6.54e-12 ***
+## BMXBMI       0.71670    0.10535   6.803 1.89e-05 ***
+## RIDAGEYR     0.34921    0.02689  12.985 2.00e-08 ***
+## female      -6.01710    0.99286  -6.060 5.67e-05 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## (Dispersion parameter for gaussian family taken to be 913.688)
+## (Dispersion parameter for gaussian family taken to be 805.8423)
 ## 
 ## Number of Fisher Scoring iterations: 2</code></pre>
 <p>Lets try logistic regression, looking at the clinical diagnosis of diabetes (LBXGLU &gt;= 126) using logistic regression:</p>
@@ -241,21 +241,21 @@ summary(mod.svy.t2d) #t2d increases by 10% per 1 unit increase in BMI.</code></p
 ##     design = dsn, family = quasibinomial())
 ## 
 ## Survey design:
-## svydesign(id = ~SDMVPSU, strata = ~SDMVSTRA, probs = ~WTMEC2YR, 
+## svydesign(id = ~SDMVPSU, strata = ~SDMVSTRA, weights = ~WTMEC2YR, 
 ##     nest = T, data = subset(dat, WTMEC2YR &gt; 0))
 ## 
 ## Coefficients:
 ##              Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept) -7.683875   0.512565 -14.991 3.91e-09 ***
-## BMXBMI       0.088160   0.017628   5.001 0.000309 ***
-## RIDAGEYR     0.056855   0.003217  17.671 5.89e-10 ***
-## female      -0.233597   0.189452  -1.233 0.241181    
+## (Intercept) -8.027527   0.440680 -18.216 4.14e-10 ***
+## BMXBMI       0.094886   0.014127   6.717 2.14e-05 ***
+## RIDAGEYR     0.054863   0.005049  10.867 1.45e-07 ***
+## female      -0.654235   0.194443  -3.365  0.00563 ** 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## (Dispersion parameter for quasibinomial family taken to be 0.5849041)
+## (Dispersion parameter for quasibinomial family taken to be 0.959516)
 ## 
-## Number of Fisher Scoring iterations: 7</code></pre>
+## Number of Fisher Scoring iterations: 6</code></pre>
 <p>What about survival analysis? Different beast! In survival analyses, we require whther the person died at the time of querying survival (0 or 1), and time to querying (e.g., 1 month, 5 months, etc) These are coded as MORTSTAT and PERMTH_EXM (time to death from the the examination survey) in the MainTable respectively. For a 1 unit glucose increase, what is the hazard of death adjusting for age and sex for participants surveyed in 1999-2000?</p>
 <pre class="r"><code>suvdat &lt;- subset(MainTable, !is.na(MORTSTAT) &amp; !is.na(PERMTH_EXM) &amp; SDDSRVYR == 1) ## get all data from 1999-2000
 dsn &lt;- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, probs=~WTMEC2YR, nest=T,data=suvdat)
@@ -367,12 +367,12 @@ mod.cox.svy &lt;- svycoxph(Surv(PERMTH_EXM, MORTSTAT) ~ RIDAGEYR + female + LBXG
 ## 1205         &lt;NA&gt;
 ## 1246         &lt;NA&gt;</code></pre>
 <pre class="r"><code>suvdat &lt;- subset(MainTable, !is.na(MORTSTAT) &amp; !is.na(PERMTH_EXM) &amp; SDDSRVYR == 1) ## get all data from 1999-2000
-dsn &lt;- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, probs=~WTMEC2YR, nest=T,data=suvdat)
+dsn &lt;- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=suvdat)
 mod.cox.cadmium.1 &lt;- svycoxph(Surv(PERMTH_EXM, MORTSTAT) ~ RIDAGEYR + female + LBXBCD, dsn)
 summary(mod.cox.cadmium.1)</code></pre>
 <pre><code>## Stratified 1 - level Cluster Sampling design (with replacement)
 ## With (27) clusters.
-## svydesign(id = ~SDMVPSU, strata = ~SDMVSTRA, probs = ~WTMEC2YR, 
+## svydesign(id = ~SDMVPSU, strata = ~SDMVSTRA, weights = ~WTMEC2YR, 
 ##     nest = T, data = suvdat)</code></pre>
 <pre><code>## Call:
 ## svycoxph(formula = Surv(PERMTH_EXM, MORTSTAT) ~ RIDAGEYR + female + 
@@ -382,30 +382,30 @@ summary(mod.cox.cadmium.1)</code></pre>
 ##    (263 observations deleted due to missingness)
 ## 
 ##               coef exp(coef)  se(coef)      z Pr(&gt;|z|)    
-## RIDAGEYR  0.087741  1.091705  0.008672 10.118  &lt; 2e-16 ***
-## female   -0.087475  0.916242  0.168531 -0.519    0.604    
-## LBXBCD    0.779839  2.181121  0.125547  6.212 5.25e-10 ***
+## RIDAGEYR  0.090097  1.094281  0.006588 13.676  &lt; 2e-16 ***
+## female   -0.523971  0.592164  0.141788 -3.695 0.000219 ***
+## LBXBCD    0.703236  2.020280  0.122204  5.755 8.69e-09 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ##          exp(coef) exp(-coef) lower .95 upper .95
-## RIDAGEYR    1.0917     0.9160    1.0733     1.110
-## female      0.9162     1.0914    0.6585     1.275
-## LBXBCD      2.1811     0.4585    1.7054     2.790
+## RIDAGEYR    1.0943     0.9138    1.0802    1.1085
+## female      0.5922     1.6887    0.4485    0.7819
+## LBXBCD      2.0203     0.4950    1.5900    2.5670
 ## 
-## Concordance= 0.857  (se = 0.013 )
+## Concordance= 0.871  (se = 0.018 )
 ## Rsquare= NA   (max possible= NA )
 ## Likelihood ratio test= NA  on 3 df,   p=NA
-## Wald test            = 173.1  on 3 df,   p=0
+## Wald test            = 208.9  on 3 df,   p=0
 ## Score (logrank) test = NA  on 3 df,   p=NA</code></pre>
 <p>Does it replicate in the 2001-2002 survey?</p>
 <pre class="r"><code>suvdat &lt;- subset(MainTable, !is.na(MORTSTAT) &amp; !is.na(PERMTH_EXM) &amp; SDDSRVYR == 2) ## 2003-2004 survey
-dsn &lt;- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, probs=~WTMEC2YR, nest=T,data=suvdat)
+dsn &lt;- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=suvdat)
 mod.cox.cadmium.2 &lt;- svycoxph(Surv(PERMTH_EXM, MORTSTAT) ~ RIDAGEYR + female + LBXBCD, dsn) # yes, strong association in 2001-2002 as well
 summary(mod.cox.cadmium.2)</code></pre>
 <pre><code>## Stratified 1 - level Cluster Sampling design (with replacement)
 ## With (30) clusters.
-## svydesign(id = ~SDMVPSU, strata = ~SDMVSTRA, probs = ~WTMEC2YR, 
+## svydesign(id = ~SDMVPSU, strata = ~SDMVSTRA, weights = ~WTMEC2YR, 
 ##     nest = T, data = suvdat)</code></pre>
 <pre><code>## Call:
 ## svycoxph(formula = Surv(PERMTH_EXM, MORTSTAT) ~ RIDAGEYR + female + 
@@ -415,21 +415,21 @@ summary(mod.cox.cadmium.2)</code></pre>
 ##    (291 observations deleted due to missingness)
 ## 
 ##              coef exp(coef) se(coef)      z Pr(&gt;|z|)    
-## RIDAGEYR  0.07899   1.08220  0.00598 13.210  &lt; 2e-16 ***
-## female   -0.75525   0.46989  0.23135 -3.265   0.0011 ** 
-## LBXBCD    0.43075   1.53841  0.09114  4.726 2.29e-06 ***
+## RIDAGEYR  0.07795   1.08107  0.00767 10.163  &lt; 2e-16 ***
+## female   -0.56521   0.56824  0.12873 -4.391 1.13e-05 ***
+## LBXBCD    0.25211   1.28673  0.08460  2.980  0.00288 ** 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ##          exp(coef) exp(-coef) lower .95 upper .95
-## RIDAGEYR    1.0822      0.924    1.0696    1.0950
-## female      0.4699      2.128    0.2986    0.7395
-## LBXBCD      1.5384      0.650    1.2868    1.8393
+## RIDAGEYR    1.0811     0.9250    1.0649    1.0974
+## female      0.5682     1.7598    0.4415    0.7313
+## LBXBCD      1.2867     0.7772    1.0901    1.5188
 ## 
-## Concordance= 0.86  (se = 0.016 )
+## Concordance= 0.818  (se = 0.019 )
 ## Rsquare= NA   (max possible= NA )
 ## Likelihood ratio test= NA  on 3 df,   p=NA
-## Wald test            = 239.5  on 3 df,   p=0
+## Wald test            = 133.2  on 3 df,   p=0
 ## Score (logrank) test = NA  on 3 df,   p=NA</code></pre>
 
 
