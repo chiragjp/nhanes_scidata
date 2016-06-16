@@ -67,11 +67,14 @@ dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=s
 mod.cox.cadmium.1 <- svycoxph(Surv(PERMTH_EXM, MORTSTAT) ~ RIDAGEYR + female + LBXBCD, dsn)
 summary(mod.cox.cadmium.1)
 ```
+In the above, we see that females have a decreased risk for death (hazard ratio of 0.6 for females vs males) and individuals with a 1 unit higher of cadmium (1 ng/mL) have a 2 fold increased risk for death (HR = 2) versus the no increase in cadmium levels. Similar results are seen in 2001-2002...
 
-Does it replicate in the 2001-2002 survey?
+##Does it replicate in the 2001-2002 survey?
 ```{r}
 suvdat <- subset(MainTable, !is.na(MORTSTAT) & !is.na(PERMTH_EXM) & SDDSRVYR == 2) ## 2003-2004 survey
 dsn <- svydesign(id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTMEC2YR, nest=T,data=suvdat)
 mod.cox.cadmium.2 <- svycoxph(Surv(PERMTH_EXM, MORTSTAT) ~ RIDAGEYR + female + LBXBCD, dsn) # yes, strong association in 2001-2002 as well
 summary(mod.cox.cadmium.2)
 ```
+
+In the above, we see that females have a decreased risk for death (hazard ratio of 0.6 for females vs males) and individuals with a 1 unit higher of cadmium (1 ng/mL) have a 30% increased risk for death (HR = 1.3). Similar results are seen in 1999-2000.
